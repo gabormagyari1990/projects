@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customer Service Assistant</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        display: flex;
+        gap: 20px;
+      }
+
+      .chat-container {
+        flex: 2;
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .upload-container {
+        flex: 1;
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .chat-messages {
+        height: 500px;
+        overflow-y: auto;
+        margin-bottom: 20px;
+        padding: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+      }
+
+      .message {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+      }
+
+      .user-message {
+        background-color: #e3f2fd;
+        margin-left: 20%;
+      }
+
+      .assistant-message {
+        background-color: #f5f5f5;
+        margin-right: 20%;
+      }
+
+      .input-container {
+        display: flex;
+        gap: 10px;
+      }
+
+      input[type="text"] {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+
+      button {
+        padding: 10px 20px;
+        background-color: #2196f3;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #1976d2;
+      }
+
+      .upload-form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      h2 {
+        color: #333;
+        margin-bottom: 15px;
+      }
+
+      .loading {
+        display: none;
+        color: #666;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Customer Service Assistant</h1>
+    <div class="container">
+      <div class="chat-container">
+        <h2>Chat</h2>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="input-container">
+          <input
+            type="text"
+            id="userInput"
+            placeholder="Type your message here..."
+          />
+          <button onclick="sendMessage()">Send</button>
+        </div>
+        <div class="loading" id="loading">Assistant is typing...</div>
+      </div>
+
+      <div class="upload-container">
+        <h2>Knowledge Base</h2>
+        <div class="upload-form">
+          <input type="file" id="fileInput" accept=".txt,.md,.doc,.docx" />
+          <button onclick="uploadFile()">Upload Document</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const chatMessages = document.getElementById("chatMessages");
+      const userInput = document.getElementById("userInput");
+      const loading = document.getElementById("loading");
+
+      userInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          sendMessage();
+        }
+      });
+
+      async function sendMessage() {
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        // Add user message to chat
+        addMessage(message, "user");
+        userInput.value = "";
+
+        // Show loading indicator
+        loading.style.display = "block";
+
+        try {
+          const response = await fetch("/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ message }),
+          });
+
+          const data = await response.json();
+          addMessage(data.response, "assistant");
+        } catch (error) {
+          console.error("Error:", error);
+          addMessage(
+            "Sorry, there was an error processing your request.",
+            "assistant"
+          );
+        }
+
+        // Hide loading indicator
+        loading.style.display = "none";
+      }
+
+      function addMessage(message, sender) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${sender}-message`;
+        messageDiv.textContent = message;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      async function uploadFile() {
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+        if (!file) {
+          alert("Please select a file first.");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const response = await fetch("/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await response.json();
+          alert(data.message);
+          fileInput.value = "";
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Error uploading file.");
+        }
+      }
+    </script>
+  </body>
+</html>
